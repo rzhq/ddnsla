@@ -6,7 +6,7 @@
 # details & how to use see  #
 # http://aurorax.org/ddnsla #
 
-import urllib, urllib2
+import requests
 import json, time, socket, re, os
 
 tz = 'Asia/Shanghai'
@@ -15,9 +15,8 @@ apipass = 'pass'
 domain = 'domain.com'
 host = '@'
 type = 'A'
-ttl = '300'
+ttl = '600'
 loop = 5 #seconds
-
 
 def main():
 
@@ -62,21 +61,16 @@ def main():
         file.close()
         
 def getIP(domain=''):
-
     url = 'http://ip.cn'
     mid = '/index.php?ip='
-    
     if domain != None:
         url = url+mid+domain
-    return re.search('\d+\.\d+\.\d+\.\d+',urllib2.urlopen(url).read()).group(0)
+    return re.search('\d+\.\d+\.\d+\.\d+',requests.get(url).text).group(0)
 
 def post(url, data=''):
-    req = urllib2.Request(url)
-    data = urllib.urlencode(data)
-    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
-    response = opener.open(req, data)
-    json_data = response.read()
-    return json.loads(json_data)
+    res = requests.post(url, data)
+    return res.json()
+
 
 def getTime():
     return time.ctime(time.time())
