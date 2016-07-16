@@ -7,7 +7,7 @@
 # http://aurorax.org/ddnsla #
 
 import requests
-import json, time, socket, re, os, sys
+import time, re, os, sys, signal
 
 conf = {}
 execfile('default.conf',conf)
@@ -75,12 +75,14 @@ def main():
                 if ret['status']['code'] == 300:
                     file.write(getTime()+'  '+hostdomain+'('+conf['type']+'): '+dip+'=>'+ip+'\n')
                     closeFile()
-                    while getIP() != recorddata:
-                        time.sleep(conf['loop'])
-                        pass
+                    while ip != getIP(hostdomain):
+                        if debug:
+                            print 'local ip -- domain ip: ', ip, '--', recorddata
+                        delay(conf['loop'])
                 else:
                     file.write(getTime()+'  '+hostdomain+'('+conf['type']+'): '+ret['status']['code']+'\n')
-
+            else:
+                delay(60)
         else:
             file.write(getTime()+'  '+hostdomain+'('+conf['type']+'): '+ret['status']['code']+'\n')
 
@@ -89,10 +91,12 @@ def main():
         closeFile()
         
 def getIP(domain=''):
-    url = 'http://www.ip138.com/ips138.asp?ip='
-    if domain != None:
-        url = url+domain
-        return re.search('\d+\.\d+\.\d+\.\d+',requests.get(url).text).group(0)
+    signal.signal(signal.SIGALRM, dog)
+    signal.alarm(5)
+    url = 'http://www.ip138.com/ips138.asp?ip=' + domain
+    ret = re.search('\d+\.\d+\.\d+\.\d+',requests.get(url).text).group(0)
+    signal.alarm(0)
+    return ret
 
 def post(url, data=''):
     res = requests.post(url, data)
@@ -106,10 +110,18 @@ def closeFile():
 def getTime():
     return time.strftime('%Y-%m-%d %H:%M:%S')
 
+def delay(sec):
+    time.sleep(sec)
+
+def dog(*args):
+    raise Exception
+
 if __name__ == '__main__':
     while True:
         try:
             main()
-        except:
-            pass
-        time.sleep(conf['loop'])
+            delay(conf['loop'])
+        except Exception as e:
+            if debug:
+                print str(e)
+                print 'still alive'
