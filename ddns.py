@@ -92,8 +92,8 @@ def main():
         
 def getIP(domain=''):
     signal.signal(signal.SIGALRM, dog)
-    signal.alarm(5)
-    url = 'http://www.ip138.com/ips138.asp?ip=' + domain
+    signal.alarm(conf['loop'])
+    url = 'http://ip.cn/index.php?ip=' + domain
     ret = re.search('\d+\.\d+\.\d+\.\d+',requests.get(url).text).group(0)
     signal.alarm(0)
     return ret
