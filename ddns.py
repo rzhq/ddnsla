@@ -7,16 +7,17 @@
 # http://aurorax.org/ddnsla #
 
 import requests
-import json, time, socket, re, os
+import json, time, socket, re, os, sys
 
-tz = 'Asia/Shanghai'
-apiid = 'test'
-apipass = 'pass'
-domain = 'domain.com'
-host = '@'
-type = 'A'
-ttl = '600'
-loop = 5 #seconds
+conf = {}
+execfile("default.conf",conf)
+
+os.environ["TZ"] = conf['tz']
+time.tzset()
+if conf['host'] == '@':
+    hostdomain = conf['host']+'.'+conf['domain']
+else:
+    hostdomain = conf['domain']
 
 def main():
 
@@ -25,15 +26,15 @@ def main():
     
     if ip != dip:
         
-        file = open('data.log','a')
+        file = open(conf['logfile'],'a')
         
         url = 'https://api.dns.la/api/record.ashx?cmd=list'
-        data = {'apiid':apiid, 'apipass':apipass, 'domain':domain}
+        data = {'apiid':conf['apiid'], 'apipass':conf['apipass'], 'domain':conf['domain']}
         ret = post(url,data)
-        
+
         if ret['status']['code'] == 300:
             for i in range(0,len(ret['datas'])):
-                if ret['datas'][i]['host'] == host and ret['datas'][i]['record_type'] == type:
+                if ret['datas'][i]['host'] == conf['host'] and ret['datas'][i]['record_type'] == conf['type']:
                     recordid = ret['datas'][i]['recordid']
                     domainid = ret['datas'][i]['domainid']
                     recordtype = ret['datas'][i]['record_type']
@@ -45,18 +46,18 @@ def main():
             
             if ip != recorddata:
                 url = 'https://api.dns.la/api/record.ashx?cmd=edit'
-                data = {'apiid':apiid, 'apipass':apipass, 'domain':domain, 'host':host,
-                       'recordid':recordid, 'recordtype':recordtype, 'recordline':recordline, 'recorddata':ip, 'ttl':ttl}
+                data = {'apiid':conf['apiid'], 'apipass':conf['apipass'], 'domain':conf['domain'], 'host':conf['host'],
+                       'recordid':recordid, 'recordtype':recordtype, 'recordline':recordline, 'recorddata':ip, 'ttl':conf['ttl']}
                 ret = post(url,data)
                 if ret['status']['code'] == 300:
-                    file.write(time.ctime()+'  '+hostdomain+'('+type+'):'+dip+'=>'+ip+'\n')
-                    while ip != getIP(domain):
+                    file.write(time.ctime()+'  '+hostdomain+'('+conf['type']+'):'+dip+'=>'+ip+'\n')
+                    while ip != getIP(conf['domain']):
                         pass
                 else:
-                    file.write(hostdomain+'('+type+'):'+ret['status']['code']+' '+time.ctime()+'\n')
+                    file.write(hostdomain+'('+conf['type']+'):'+ret['status']['code']+' '+time.ctime()+'\n')
 
         else:
-            file.write(hostdomain+'('+type+'):'+ret['status']['code']+' '+time.ctime()+'\n')
+            file.write(hostdomain+'('+conf['type']+'):'+ret['status']['code']+' '+time.ctime()+'\n')
             
         file.close()
         
@@ -75,13 +76,7 @@ def post(url, data=''):
 def getTime():
     return time.ctime(time.time())
 
-os.environ["TZ"] = tz
-time.tzset()
-hostdomain = domain
-if host != '@':
-    hostdomain = host+'.'+hostdomain
-
 if __name__ == '__main__':
     while True:
         main()
-        time.sleep(loop)
+        time.sleep(conf['loop'])
