@@ -10,7 +10,7 @@ import requests
 import time, re, os, sys, signal
 
 conf = {}
-execfile('default.conf',conf)
+execfile(os.path.dirname(os.path.realpath(sys.argv[0]))+'/default.conf',conf)
 
 os.environ["TZ"] = conf['tz']
 time.tzset()
